@@ -29,18 +29,18 @@ def sendPrompt(source, url):
     client = OpenAI(api_key=api_key)
     print(page_summary)
     topic = ""
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-            "role": "system",
-            "content": "You are a helpful assistant that determines if a webpage is primarily related to productive or educational content (e.g. tutorials, learning resources, technical discussions, job listings, or communities focused on improving skills), or if it is mostly entertainment/brain rot (e.g. memes, gossip, celebrity news, low-effort content). If the content includes technical topics, professional development, or learning-related discussions—even if from Reddit—consider it educational. Based on this, return just the word 'yes' if it's educational/productive, or 'no' if it's not."
-            },
-            {"role": "user", "content": f"Is this webpage about studying or educational content?\n\n{page_summary}"}
-        ]
-    )
+    # response = client.chat.completions.create(
+    #     model="gpt-3.5-turbo",
+    #     messages=[
+    #         {
+    #         "role": "system",
+    #         "content": "You are a helpful assistant that determines if a webpage is primarily related to productive or educational content (e.g. tutorials, learning resources, technical discussions, job listings, or communities focused on improving skills), or if it is mostly entertainment/brain rot (e.g. memes, gossip, celebrity news, low-effort content). If the content includes technical topics, professional development, or learning-related discussions—even if from Reddit—consider it educational. Based on this, return just the word 'yes' if it's educational/productive, or 'no' if it's not."
+    #         },
+    #         {"role": "user", "content": f"Is this webpage about studying or educational content?\n\n{page_summary}"}
+    #     ]
+    # )
 
-    return response.choices[0].message.content.strip()
+    return 0
 
 #testing
 study_urls = [
@@ -52,7 +52,7 @@ study_urls = [
 ]
 
 non_study_urls = [
-    "https://www.w3schools.com/python/python_functions.asp"
+    "https://www.reddit.com/r/Rwanda/comments/1kj9xii/looking_for_business_networking_spots_or_meetups/"
 ]
 
 for url in non_study_urls:
