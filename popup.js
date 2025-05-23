@@ -1,41 +1,35 @@
-// Wait for DOM to load
-document.addEventListener("DOMContentLoaded", () => {
-  const contentEl = document.getElementById("content");
-  const statusEl = document.getElementById("status");
-  const prodBtn = document.getElementById("productiveBtn");
-  const unprodBtn = document.getElementById("unproductiveBtn");
-
-  // Request content from the active tab
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.tabs.sendMessage(tabs[0].id, { type: "GET_PAGE_TEXT" }, (response) => {
-      if (response?.text) {
-        contentEl.textContent = response.text.slice(0, 1000); // truncate for display
-        contentEl.dataset.fullText = response.text; // save full text for labeling
-      } else {
-        contentEl.textContent = "Unable to retrieve content.";
-      }
-    });
+function checkProductivity(text) {
+  fetch("http://127.0.0.1:5000/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const status = document.getElementById("status");
+    if (data.productive === true) {
+      status.textContent = "✅ This page is productive!";
+      status.style.color = "green";
+    } else if (data.productive === false) {
+      status.textContent = "⚠️ This page is unproductive.";
+      status.style.color = "red";
+    } else {
+      status.textContent = "❓ Couldn't determine productivity.";
+      status.style.color = "gray";
+    }
+  })
+  .catch(err => {
+    document.getElementById("status").textContent = "Error connecting to ML model.";
+    console.error("Fetch error:", err);
   });
+}
 
-  const handleLabel = (label) => {
-    const fullText = contentEl.dataset.fullText;
-    if (!fullText) return;
+chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+  chrome.tabs.sendMessage(tabs[0].id, { type: "GET_PAGE_TEXT" }, function (response) {
+    const contentDiv = document.getElementById("content");
+    const pageText = response?.text || "No text found.";
+    contentDiv.textContent = pageText;
 
-    const item = {
-      text: fullText,
-      label: label,
-      timestamp: Date.now()
-    };
-
-    chrome.storage.local.get(["labeledData"], (result) => {
-      const currentData = result.labeledData || [];
-      currentData.push(item);
-      chrome.storage.local.set({ labeledData: currentData }, () => {
-        statusEl.textContent = `Saved as ${label === 1 ? "Productive" : "Unproductive"}`;
-      });
-    });
-  };
-
-  prodBtn.addEventListener("click", () => handleLabel(1));
-  unprodBtn.addEventListener("click", () => handleLabel(0));
+    checkProductivity(pageText); // 🔗 Call the Flask model
+  });
 });
