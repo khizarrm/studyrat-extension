@@ -5,6 +5,8 @@ __pycache__/
 *.pyd
 *.so
 
+node_modules/
+
 # Virtual environment
 venv/
 ENV/
