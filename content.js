@@ -69,7 +69,6 @@ function analyzePageText({ text, image_count, video_count, gif_count, media_dens
 }
 
 
-// AUTO-ANALYSIS FUNCTION
 function autoAnalyzePage() {
   console.log("Auto-analysis triggered, readyState:", document.readyState);
   // Wait a bit for page to fully load
@@ -97,8 +96,13 @@ function autoAnalyzePage() {
         
     if (bodyText.trim().length > 100) { // Only analyze if there's substantial content
       console.log("Starting auto-analysis...");
+      
+      // Limit text to 2000 characters to prevent database index errors
+      const truncatedText = bodyText.trim().substring(0, 2000);
+      console.log("Truncated text length:", truncatedText.length);
+      
       const payload = {
-        text: bodyText,
+        text: truncatedText,
         image_count,
         video_count,
         gif_count,
