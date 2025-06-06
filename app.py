@@ -108,11 +108,7 @@ def feedback():
         print("adding to Supabase…")
         result = supabase.table(table_name).insert(payload).execute()
         print("Supabase result.data:", result.data)
-
-        if result.error:
-            # If Supabase client library returned an error, raise it
-            raise Exception(f"Supabase returned error")
-
+        
         return jsonify({
             "message": "Feedback added successfully",
             "table": table_name,
