@@ -2,7 +2,7 @@ import {showBlockOverlay } from "./components/blockOverlay"
 import { showPredictionOverlay } from "./components/predictionOverlay";
 import { predict } from "../../apis/apiClient";
 
-const learningmode = false;
+const learningmode = true;
 
 async function analyzeContent() {
   console.log("Starting to analyze content...");
