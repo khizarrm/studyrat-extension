@@ -1,9 +1,10 @@
-export async function predict({ text, image_count, video_count, gif_count, media_density_ratio }) {
+export async function predict({ url, text, image_count, video_count, gif_count, media_density_ratio }) {
   try {
     const response = await fetch("http://127.0.0.1:5000/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
+        url, 
         text,
         image_count,
         video_count,

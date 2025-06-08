@@ -6,10 +6,12 @@ const learningmode = true;
 
 let contentObserver = null;
 let settleTimer = null;
+let isAnalysisRunning = false;
 
 
 async function analyzeContent() {
   console.log("Starting to analyze content...");
+  try {
   const bodyText = document.body.innerText || "";
 
   // --- Media Counts ---
@@ -57,7 +59,8 @@ async function analyzeContent() {
     // --- End of New Logic ---
 
     const payload = {
-      text: truncatedText, // Use the new byte-truncated text
+      url: window.location.href, 
+      text: truncatedText,
       image_count: image_count,
       video_count: video_count,
       gif_count: gif_count,
@@ -75,82 +78,78 @@ async function analyzeContent() {
     } else {
       console.error("Prediction failed or returned invalid data:", data);
     }
+  } 
+  } finally {
+    console.log("Analysis process finished. Resetting state flag.");
+    isAnalysisRunning = false;
   }
 }
 
 function waitForPageToSettleAndAnalyze() {
-  // Clear any previous observer or timer to prevent overlaps from fast navigations.
-  if (contentObserver) {
-    contentObserver.disconnect();
-  }
+  if (contentObserver) contentObserver.disconnect();
   clearTimeout(settleTimer);
 
   const DEBOUNCE_DELAY_MS = 750;
 
-  // This is the key change. We set a "default" timer that will run
-  // if the page is static and doesn't change.
   settleTimer = setTimeout(() => {
-    console.log("Timer finished, page is assumed stable.");
-    // When the timer runs, we disconnect the observer so it doesn't fire later.
-    if (contentObserver) {
-      contentObserver.disconnect();
-      contentObserver = null;
-    }
+    if (contentObserver) contentObserver.disconnect();
     analyzeContent();
   }, DEBOUNCE_DELAY_MS);
 
-
-  // Now, we set up the observer.
   contentObserver = new MutationObserver(() => {
-    // If the DOM *does* change, it means the page is dynamic.
-    // We clear the previous timer...
     clearTimeout(settleTimer);
-    
-    // ...and set a new one. This pushes the analysis further into the future.
     settleTimer = setTimeout(() => {
-      console.log("Debounced timer finished after DOM changes.");
-      if (contentObserver) {
-        contentObserver.disconnect();
-        contentObserver = null;
-      }
+      if (contentObserver) contentObserver.disconnect();
       analyzeContent();
     }, DEBOUNCE_DELAY_MS);
   });
 
-  // Start observing the page.
   contentObserver.observe(document.body, {
     childList: true,
     subtree: true,
     characterData: true
   });
-
 }
 
-
-
 function handleProductivityResult(isProductive) {
-  if (learningmode){
-    showPredictionOverlay(isProductive)
+  // Before showing a new overlay, let's make sure the old one is gone.
+  const existingOverlay = document.getElementById('prediction-overlay-container');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+
+  if (learningmode) {
+    showPredictionOverlay(isProductive);
   } else {
-    if (!isProductive){
-    showBlockOverlay()
+    if (!isProductive) {
+      showBlockOverlay();
     }
   }
 }
 
 async function runThatBitch() {
-  const result = await chrome.storage.local.get(['sageAiActivated']);
-  console.log("Just got the result: ", result);
-  if (!result.sageAiActivated) return;
-
-  console.log("Calling content waiter/analyzer...");
+  // NEW: Check if an analysis is already running. If so, stop immediately.
+  if (isAnalysisRunning) {
+    console.log("Analysis already in progress. Skipping new trigger.");
+    return;
+  }
+  // NEW: Set the flag to true to block any other triggers.
+  isAnalysisRunning = true;
+  console.log("State flag set to true. Starting analysis process...");
   
-  // This handles both the initial load AND SPA navigations correctly.
+  const result = await chrome.storage.local.get(['sageAiActivated']);
+  if (!result.sageAiActivated) {
+    // Important: Reset the flag if we exit early.
+    isAnalysisRunning = false; 
+    return;
+  }
+  
+  console.log("Calling content waiter/analyzer...");
   waitForPageToSettleAndAnalyze();
 }
 
+// --- LISTENERS (Unchanged) ---
 runThatBitch();
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'URL_CHANGED') {
     console.log("URL has changed, re-running checks.");

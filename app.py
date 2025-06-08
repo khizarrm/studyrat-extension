@@ -11,6 +11,8 @@ from flask_cors import CORS
 from supabase import create_client
 from sklearn.preprocessing import StandardScaler
 
+from urllib.parse import urlparse
+
 # Load trained model and vectorizer
 def load_model():
     try:
@@ -48,48 +50,75 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 import numpy as np
 from flask import request, jsonify
 
+UNPRODUCTIVE_DOMAINS = {
+    'instagram.com',
+    'facebook.com',
+    'twitter.com',
+    'tiktok.com',
+    '9gag.com'
+}
+
+PRODUCTIVE_HOMEPAGE_PATHS = {
+    'youtube.com': ['/', '/feed/subscriptions', '/feed/history'],
+    'en.wikipedia.org': ['/wiki/Main_Page'],
+    'github.com': ['/'],
+    # Add other sites and their safe homepage paths here
+}
+
 @app.route("/predict", methods=["POST"])
 def predict():
     """
-    Make a prediction using the model with scaled media features.
+    Make a prediction using rule-based checks first, then the ML model.
     """
     try:
-        # Ensure all components are loaded
-        if not model or not vectorizer or not media_scaler:
-            return jsonify({"error": "Model, vectorizer, or scaler not loaded. Please train the model first."}), 500
-
         data = request.get_json()
+        url = data.get("url") # Get the URL from the payload
         text = data.get("text", "")
-        if not text:
-            return jsonify({"error": "No text provided"}), 400
 
-        # Extract media fields (default to 0 if missing)
+        if not text or not url:
+            return jsonify({"error": "No text or URL provided"}), 400
+
+        # --- Rule-Based Checks (Before Using the Model) ---
+        parsed_url = urlparse(url)
+        # Clean the domain (e.g., 'www.youtube.com' -> 'youtube.com')
+        domain = parsed_url.netloc.replace('www.', '')
+        path = parsed_url.path
+
+        # Rule 1: Is the domain on our unproductive list?
+        if domain in UNPRODUCTIVE_DOMAINS:
+            print(f"URL RULE: Domain '{domain}' is on the unproductive list. Prediction: Unproductive.")
+            return jsonify({"productive": False, "reason": "Unproductive Domain"})
+
+        # Rule 2: Is this a "safe" homepage of a known productive site?
+        if domain in PRODUCTIVE_HOMEPAGE_PATHS:
+            if path in PRODUCTIVE_HOMEPAGE_PATHS[domain]:
+                print(f"URL RULE: Path '{path}' on '{domain}' is a safe homepage. Prediction: Productive.")
+                return jsonify({"productive": True, "reason": "Productive Homepage"})
+
+        # --- If no rules match, proceed to the ML Model ---
+        print("URL RULE: No rules matched. Proceeding with ML model prediction.")
+        if not model or not vectorizer or not media_scaler:
+            return jsonify({"error": "Model not loaded"}), 500
+
+        # Extract media fields
         img_count = int(data.get("image_count", 0))
         vid_count = int(data.get("video_count", 0))
         gif_count = int(data.get("gif_count", 0))
         density = float(data.get("media_density_ratio", 0.0))
 
         # --- Feature Preparation ---
-        # 1) Transform text using the loaded TF-IDF vectorizer
-        text_vect = vectorizer.transform([text]).toarray()  # Shape: (1, 5000)
-
-        # 2) Create a NumPy array for the media features
-        media_features = np.array([[img_count, vid_count, gif_count, density]]) # Shape: (1, 4)
-
-        # 3) Scale the media features using the loaded StandardScaler
-        scaled_media_features = media_scaler.transform(media_features) # Shape: (1, 4)
-
-        # 4) Concatenate TF-IDF and scaled media features
-        X_combined = np.concatenate([text_vect, scaled_media_features], axis=1)  # Shape: (1, 5004)
+        text_vect = vectorizer.transform([text]).toarray()
+        media_features = np.array([[img_count, vid_count, gif_count, density]])
+        scaled_media_features = media_scaler.transform(media_features)
+        X_combined = np.concatenate([text_vect, scaled_media_features], axis=1)
 
         # --- Prediction ---
-        # 5) Make a prediction with the combined feature vector
         pred = model.predict(X_combined)[0]
-        return jsonify({"productive": bool(pred)})
+        return jsonify({"productive": bool(pred), "reason": "ML Model"})
 
     except Exception as e:
-        print("Prediction Error: ", e)
-        return jsonify({"error": str(e)}), 500
+        print(f"Error in /predict: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 @app.route("/feedback", methods=["POST"])
 def feedback():
