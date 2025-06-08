@@ -413,7 +413,7 @@ function sendFeedback(isCorrectClassification, originalPrediction) {
   console.log("In feedback function")
   const bodyText = document.body.innerText || ""; // or re-grab innerText if needed
 
-  const BYTE_LIMIT = 2700; // The safe limit for your database index
+  const BYTE_LIMIT = 2400; 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   const encodedText = encoder.encode(bodyText.trim());

@@ -10,7 +10,9 @@
   },
   "permissions":[
     "storage",
-    "alarms"
+    "alarms",
+    "webNavigation",
+    "tabs" 
   ],
   "icons": {
     "128": "icon-128.png"

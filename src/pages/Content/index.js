@@ -4,6 +4,10 @@ import { predict } from "../../apis/apiClient";
 
 const learningmode = true;
 
+let contentObserver = null;
+let settleTimer = null;
+
+
 async function analyzeContent() {
   console.log("Starting to analyze content...");
   const bodyText = document.body.innerText || "";
@@ -32,7 +36,7 @@ async function analyzeContent() {
   if (bodyText.trim().length > 100) {
 
     // --- NEW: Truncate by Byte Length ---
-    const BYTE_LIMIT = 2700; // A safe limit, just under the 2704 max
+    const BYTE_LIMIT = 2400; // A safe limit, just under the 2704 max
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -74,6 +78,55 @@ async function analyzeContent() {
   }
 }
 
+function waitForPageToSettleAndAnalyze() {
+  // Clear any previous observer or timer to prevent overlaps from fast navigations.
+  if (contentObserver) {
+    contentObserver.disconnect();
+  }
+  clearTimeout(settleTimer);
+
+  const DEBOUNCE_DELAY_MS = 750;
+
+  // This is the key change. We set a "default" timer that will run
+  // if the page is static and doesn't change.
+  settleTimer = setTimeout(() => {
+    console.log("Timer finished, page is assumed stable.");
+    // When the timer runs, we disconnect the observer so it doesn't fire later.
+    if (contentObserver) {
+      contentObserver.disconnect();
+      contentObserver = null;
+    }
+    analyzeContent();
+  }, DEBOUNCE_DELAY_MS);
+
+
+  // Now, we set up the observer.
+  contentObserver = new MutationObserver(() => {
+    // If the DOM *does* change, it means the page is dynamic.
+    // We clear the previous timer...
+    clearTimeout(settleTimer);
+    
+    // ...and set a new one. This pushes the analysis further into the future.
+    settleTimer = setTimeout(() => {
+      console.log("Debounced timer finished after DOM changes.");
+      if (contentObserver) {
+        contentObserver.disconnect();
+        contentObserver = null;
+      }
+      analyzeContent();
+    }, DEBOUNCE_DELAY_MS);
+  });
+
+  // Start observing the page.
+  contentObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+
+}
+
+
 
 function handleProductivityResult(isProductive) {
   if (learningmode){
@@ -85,17 +138,23 @@ function handleProductivityResult(isProductive) {
   }
 }
 
-async function runThatBitch(){
+async function runThatBitch() {
   const result = await chrome.storage.local.get(['sageAiActivated']);
-  console.log("Just got the result: ", result)
+  console.log("Just got the result: ", result);
   if (!result.sageAiActivated) return;
 
-  console.log("Calling auto analyze..")
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', analyzeContent);
-  } else {
-    analyzeContent();
-  }
+  console.log("Calling content waiter/analyzer...");
+  
+  // This handles both the initial load AND SPA navigations correctly.
+  waitForPageToSettleAndAnalyze();
 }
 
-runThatBitch()
+runThatBitch();
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'URL_CHANGED') {
+    console.log("URL has changed, re-running checks.");
+    runThatBitch();
+  }
+  return true;
+});

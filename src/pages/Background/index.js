@@ -59,6 +59,47 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+/**
+ * Sends a message to a tab, retrying up to a few times if the content script isn't ready.
+ * @param {number} tabId The ID of the tab to send the message to.
+ * @param {any} message The message to send.
+ * @param {number} retries The number of remaining retries.
+ */
+function sendMessageWithRetry(tabId, message, retries = 5) {
+  // Stop retrying if we're out of attempts
+  if (retries <= 0) {
+    console.log(`Stopped retrying message for tab ${tabId}. Content script might not be available.`);
+    return;
+  }
+  
+  chrome.tabs.sendMessage(tabId, message)
+    .catch(error => {
+      // Check for the specific error that indicates the content script is not yet available
+      if (error.message.includes("Could not establish connection. Receiving end does not exist.")) {
+        console.log(`Content script not ready in tab ${tabId}, retrying... (${retries - 1} left)`);
+        // Wait a short moment and try again
+        setTimeout(() => sendMessageWithRetry(tabId, message, retries - 1), 200);
+      } else {
+        console.error(`Error sending message to tab ${tabId}:`, error);
+      }
+    });
+}
+
+
+function handleNavigation(details) {
+  // Filter to only run on the main top-level frame and on actual web pages
+  if (details.frameId === 0 && details.url.startsWith("http")) {
+    console.log(`Navigation event on ${details.url}. Notifying content script in tab ${details.tabId}.`);
+    sendMessageWithRetry(details.tabId, { type: "URL_CHANGED", url: details.url });
+  }
+}
+
+// Listener for traditional page loads
+chrome.webNavigation.onCompleted.addListener(handleNavigation);
+
+// Listener for URL changes in Single Page Applications
+chrome.webNavigation.onHistoryStateUpdated.addListener(handleNavigation);
+
 // Fired when a message is sent from other parts of the extension.
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Return true to indicate you will send a response asynchronously.
