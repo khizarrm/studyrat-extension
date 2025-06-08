@@ -1,45 +1,227 @@
-.App {
-  position: absolute;
-  top: 0px;
-  bottom: 0px;
-  left: 0px;
-  right: 0px;
-  text-align: center;
-  height: 100%;
-  padding: 10px;
-  background-color: #282c34;
-}
+        .popup-container {
+          width: 280px;
+          height: 360px;
+          background: #ffffff;
+          position: relative;
+          overflow: hidden;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          box-shadow: 
+            0 10px 25px rgba(0, 0, 0, 0.1),
+            0 4px 10px rgba(0, 0, 0, 0.05);
+          display: flex;
+          flex-direction: column;
+        }
 
-.App-logo {
-  height: 30vmin;
-  pointer-events: none;
-}
+        .loading-spinner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+        }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
+        .spinner {
+          width: 24px;
+          height: 24px;
+          border: 2px solid rgba(139, 92, 246, 0.3);
+          border-top: 2px solid #8b5cf6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
 
-.App-header {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+        .header {
+          background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+          padding: 20px 16px 18px 16px;
+          color: white;
+        }
 
-.App-link {
-  color: #61dafb;
-}
+        .brand-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+        .sage-icon {
+          font-size: 24px;
+          opacity: 0.9;
+        }
+
+        .brand-text {
+          flex: 1;
+        }
+
+        .sage-title {
+          font-size: 18px;
+          font-weight: 700;
+          margin: 0;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+
+        .sage-subtitle {
+          font-size: 11px;
+          margin: 2px 0 0 0;
+          opacity: 0.8;
+          font-weight: 400;
+          letter-spacing: 0.5px;
+        }
+
+        .content {
+          flex: 1;
+          padding: 24px 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 24px;
+        }
+
+        .status-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 20px;
+          transition: all 0.2s ease;
+        }
+
+        .status-container.active {
+          background: rgba(34, 197, 94, 0.1);
+          border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .status-container.inactive {
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-container.active .status-dot {
+          background: #22c55e;
+        }
+
+        .status-container.inactive .status-dot {
+          background: #f59e0b;
+        }
+
+        .status-text {
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.3px;
+        }
+
+        .status-container.active .status-text {
+          color: #166534;
+        }
+
+        .status-container.inactive .status-text {
+          color: #92400e;
+        }
+
+        .toggle-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .toggle-label {
+          position: relative;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .toggle-input {
+          display: none;
+        }
+
+        .toggle-slider {
+          width: 80px;
+          height: 40px;
+          background: #f1f5f9;
+          border: 2px solid #e2e8f0;
+          border-radius: 20px;
+          position: relative;
+          transition: all 0.3s ease;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .toggle-input:checked + .toggle-slider {
+          background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+          border-color: #8b5cf6;
+          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .toggle-thumb {
+          width: 32px;
+          height: 32px;
+          background: #ffffff;
+          border-radius: 50%;
+          position: absolute;
+          top: 50%;
+          left: 4px;
+          transform: translateY(-50%);
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .toggle-input:checked + .toggle-slider .toggle-thumb {
+          left: 44px;
+          box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+        }
+
+        .toggle-icon {
+          font-size: 14px;
+          transition: all 0.2s ease;
+        }
+
+        .description {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .footer {
+          padding: 12px 16px;
+          border-top: 1px solid #f1f5f9;
+          text-align: center;
+          background: #fafafa;
+        }
+
+        .footer-text {
+          font-size: 10px;
+          color: #8b5cf6;
+          font-weight: 600;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+
+        @keyframes statusPulse {
+          0%, 100% { 
+            opacity: 1;
+          }
+          50% { 
+            opacity: 0.5;
+          }
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .toggle-label:hover .toggle-slider {
+          transform: scale(1.02);
+        }
+
+        .toggle-label:active .toggle-slider {
+          transform: scale(0.98);
+        }
