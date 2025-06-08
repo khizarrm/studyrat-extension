@@ -9,7 +9,8 @@
     "default_icon": "icon-34.png"
   },
   "permissions":[
-    "storage"
+    "storage",
+    "alarms"
   ],
   "icons": {
     "128": "icon-128.png"
