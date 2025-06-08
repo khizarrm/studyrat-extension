@@ -88,7 +88,7 @@ def predict():
         return jsonify({"productive": bool(pred)})
 
     except Exception as e:
-        print("Eroor: ", str(e))
+        print("Prediction Error: ", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/feedback", methods=["POST"])
@@ -177,24 +177,25 @@ def get_untrained_stats():
 @app.route("/admin/retrain-model", methods=["POST"])
 def retrain_model():
     """
-    Retrain the ML model with text + media features using StandardScaler.
+    Retrain the ML model with all data, then updates all used rows
+    to set the 'trained' column to True.
     """
+    # Declare global variables at the very top of the function
+    global model, vectorizer, scaler
+
     try:
-        print("Starting model retraining with media features...")
+        print("Starting model retraining...")
 
-        # IMPORTANT: For best results, ensure your CSV files contain modern
-        # examples of productive content (e.g., "learn ai models", "supabase tutorial").
-        # Your model's accuracy depends heavily on the quality and variety of this data.
-
-        # Fetch ALL data from Supabase including media features
+        # Step 1: Fetch ALL data from Supabase
+        print("Fetching all productive and unproductive data...")
         productive_data = supabase.table('productive').select(
-            'content', 'image_count', 'video_count', 'gif_count', 'media_density_ratio'
+            'id', 'content', 'image_count', 'video_count', 'gif_count', 'media_density_ratio'
         ).execute()
         unproductive_data = supabase.table('unproductive').select(
-            'content', 'image_count', 'video_count', 'gif_count', 'media_density_ratio'
+            'id', 'content', 'image_count', 'video_count', 'gif_count', 'media_density_ratio'
         ).execute()
 
-        # --- Convert to feature arrays with NULL handling ---
+        # --- Data preparation ---
         productive_texts = [item['content'] for item in productive_data.data]
         productive_media = [
             [
@@ -219,31 +220,24 @@ def retrain_model():
             return jsonify({"error": "Insufficient data for training"}), 400
 
         print(f"Training with {len(productive_texts)} productive and {len(unproductive_texts)} unproductive samples")
-        print(f"Media features enabled: image_count, video_count, gif_count, media_density_ratio")
 
-        # Combine all text and media data
+        # --- Feature Engineering & Model Training ---
         all_texts = productive_texts + unproductive_texts
-        all_media = np.array(productive_media + unproductive_media) # Use NumPy array for scaler
+        all_media = np.array(productive_media + unproductive_media)
         labels = [1] * len(productive_texts) + [0] * len(unproductive_texts)
 
-        # --- Feature Engineering ---
-        # 1) Create TF-IDF features from text
         print("Generating TF-IDF features...")
         new_vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
         text_features = new_vectorizer.fit_transform(all_texts)
         text_features_dense = text_features.toarray()
 
-        # 2) Scale media features using StandardScaler
         print("Scaling media features with StandardScaler...")
         media_scaler = StandardScaler()
         scaled_media_features = media_scaler.fit_transform(all_media)
 
-        # 3) Concatenate text and scaled media features
         print("Combining text and media features...")
         combined_features = np.concatenate([text_features_dense, scaled_media_features], axis=1)
-        print(f"Combined feature matrix shape: {combined_features.shape}")
 
-        # --- Model Training ---
         print("Training enhanced LogisticRegression model...")
         new_model = LogisticRegression(random_state=42, max_iter=1000)
         X_train, X_test, y_train, y_test = train_test_split(
@@ -251,11 +245,8 @@ def retrain_model():
         )
         new_model.fit(X_train, y_train)
 
-        # Calculate accuracy
         train_accuracy = accuracy_score(y_train, new_model.predict(X_train))
         test_accuracy = accuracy_score(y_test, new_model.predict(X_test))
-
-        print(f"Training accuracy: {train_accuracy:.4f}")
         print(f"Test accuracy: {test_accuracy:.4f}")
 
         # --- Save Artifacts ---
@@ -273,29 +264,37 @@ def retrain_model():
         with open("vectorizer.pkl", "wb") as f:
             pickle.dump(new_vectorizer, f)
         with open("media_scaler.pkl", "wb") as f:
-            pickle.dump(media_scaler, f) # Save the new scaler
+            pickle.dump(media_scaler, f)
 
         # Update global model variables
-        global model, vectorizer, scaler
         model = new_model
         vectorizer = new_vectorizer
         scaler = media_scaler
+        
+        # --- Mark all used data as trained ---
+        print("Marking used data as trained in Supabase...")
 
-        # (Optional) Mark data as trained and log history in Supabase...
-        print("Enhanced model retraining completed successfully")
+        productive_ids = [item['id'] for item in productive_data.data]
+        unproductive_ids = [item['id'] for item in unproductive_data.data]
+
+        if productive_ids:
+            supabase.table('productive').update({'trained': True}).in_('id', productive_ids).execute()
+        if unproductive_ids:
+            supabase.table('unproductive').update({'trained': True}).in_('id', unproductive_ids).execute()
+        
+        print("Data successfully marked as trained.")
 
         return jsonify({
-            "message": "Enhanced model retrained successfully with media features and StandardScaler",
+            "message": "Model retrained and all data marked as trained.",
             "accuracy": {
                 "train_accuracy": float(train_accuracy),
                 "test_accuracy": float(test_accuracy)
             },
-            "enhancement": "Media features scaled with StandardScaler",
             "trained_at": datetime.datetime.now().isoformat()
         })
 
     except Exception as e:
-        print(f"Error during enhanced retraining: {e}")
+        print(f"Error during retraining: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

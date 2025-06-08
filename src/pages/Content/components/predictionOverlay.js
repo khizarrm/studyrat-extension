@@ -412,6 +412,22 @@ function removePredictionOverlay() {
 function sendFeedback(isCorrectClassification, originalPrediction) {
   console.log("In feedback function")
   const bodyText = document.body.innerText || ""; // or re-grab innerText if needed
+
+  const BYTE_LIMIT = 2700; // The safe limit for your database index
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const encodedText = encoder.encode(bodyText.trim());
+
+  let truncatedText;
+  if (encodedText.byteLength > BYTE_LIMIT) {
+    console.log(`Feedback text is too long (${encodedText.byteLength} bytes). Truncating.`);
+    const truncatedBytes = encodedText.slice(0, BYTE_LIMIT);
+    truncatedText = decoder.decode(truncatedBytes);
+    console.log("Truncated text: ", truncatedText)
+  } else {
+    truncatedText = bodyText.trim();
+  }
+
   const allImgs = document.getElementsByTagName("img");
   const image_count = allImgs.length;
   const allVideos = document.getElementsByTagName("video");
@@ -430,7 +446,7 @@ function sendFeedback(isCorrectClassification, originalPrediction) {
   console.log("Original prediction is: ", originalPrediction)
 
   const feedbackData = {
-    text: bodyText,
+    text: truncatedText,
     image_count,
     video_count,
     gif_count,

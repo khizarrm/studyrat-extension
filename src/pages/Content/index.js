@@ -15,38 +15,53 @@ async function analyzeContent() {
   let gif_count = 0;
   for (let img of allImgs) {
     const src = (img.src || "").toLowerCase();
-    if (src.endsWith(".gif") || src.includes("gif")) { // More robust check
+    if (src.endsWith(".gif") || src.includes("gif")) {
       gif_count += 1;
     }
   }
 
-  // Explicitly ensure all counts are numbers
   const image_count = Number(allImgs.length);
   const video_count = Number(allVideos.length);
-  gif_count = Number(gif_count); // Ensure gif_count is also a number
+  gif_count = Number(gif_count);
 
   // --- Media Density ---
-  const total_media = image_count + video_count; // GIF count is part of image_count
+  const total_media = image_count + video_count;
   const words = (bodyText.trim().split(/\s+/).filter(w => w).length);
-  
-  // Ensure density is a valid float, guarding against division by zero
   const media_density_ratio = words > 0 ? parseFloat((total_media / words).toFixed(4)) : 0.0;
 
   if (bodyText.trim().length > 100) {
-    const wordLimit = 300;
-    const wordsArray = bodyText.trim().split(/\s+/).filter(w => w);
-    const truncatedText = wordsArray.slice(0, wordLimit).join(' ');
+
+    // --- NEW: Truncate by Byte Length ---
+    const BYTE_LIMIT = 2700; // A safe limit, just under the 2704 max
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    // Convert the entire text to a byte array
+    const encodedText = encoder.encode(bodyText.trim());
+
+    let truncatedText;
+
+    if (encodedText.byteLength > BYTE_LIMIT) {
+      // Slice the byte array to the limit
+      const truncatedBytes = encodedText.slice(0, BYTE_LIMIT);
+      // Decode it back to a string. The decoder handles incomplete multi-byte characters gracefully.
+      truncatedText = decoder.decode(truncatedBytes);
+    } else {
+      // The text is already within the limit
+      truncatedText = bodyText.trim();
+    }
+    // --- End of New Logic ---
 
     const payload = {
-      text: truncatedText,
+      text: truncatedText, // Use the new byte-truncated text
       image_count: image_count,
       video_count: video_count,
       gif_count: gif_count,
       media_density_ratio: media_density_ratio
     };
 
-    // CRITICAL: Log the payload to debug what's being sent
     console.log("Sending payload to /predict:", payload);
+    console.log("Payload text byte length:", encoder.encode(payload.text).byteLength); // For debugging
 
     const data = await predict(payload);
 

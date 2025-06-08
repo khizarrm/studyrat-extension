@@ -3,7 +3,6 @@ const SERVER_URL = 'http://127.0.0.1:5000';
 const HEALTH_CHECK_ALARM_NAME = 'healthCheck';
 const HEALTH_CHECK_PERIOD_MINUTES = 0.25;
 
-
 // --- CORE FUNCTIONS ---
 
 /**
