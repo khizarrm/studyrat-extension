@@ -45,7 +45,6 @@ const Panel: React.FC = () => {
 
     // Function to handle the "Retrain Model" button click
     const handleRetrain = () => {
-        if (!stats || stats.total_untrained === 0) return;
 
         setIsLoading(true); // Disable buttons while retraining
         setStatusMessage({ text: 'Retraining in progress... this may take a moment.', type: 'success' });
@@ -113,7 +112,7 @@ const Panel: React.FC = () => {
                 </button>
                 <button 
                     onClick={handleRetrain} 
-                    disabled={isLoading || !stats || stats.total_untrained === 0}
+                    disabled={isLoading}
                     className="retrain-btn"
                 >
                     Retrain Model
