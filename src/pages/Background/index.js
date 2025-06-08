@@ -1,9 +1,6 @@
 // --- CONFIGURATION ---
 const SERVER_URL = 'http://127.0.0.1:5000';
 const HEALTH_CHECK_ALARM_NAME = 'healthCheck';
-// Set the alarm period to 15 seconds (0.25 minutes).
-// Note: Chrome may enforce a minimum of 1 minute on stable versions.
-// For development and testing, 0.25 is often acceptable.
 const HEALTH_CHECK_PERIOD_MINUTES = 0.25;
 
 
@@ -49,12 +46,10 @@ async function checkServerHealth() {
 // Fired when the extension is first installed, updated, or Chrome is updated.
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Extension installed/updated. Setting up alarm.');
-  // Using an alarm ensures the check runs periodically even if the service worker goes inactive.
   chrome.alarms.create(HEALTH_CHECK_ALARM_NAME, {
-    delayInMinutes: 0, // Fire immediately on setup
+    delayInMinutes: 0,
     periodInMinutes: HEALTH_CHECK_PERIOD_MINUTES
   });
-  // Perform an initial check right away.
   checkServerHealth();
 });
 
@@ -65,20 +60,49 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-// Fired when a message is sent from other parts of the extension (like the popup).
+// Fired when a message is sent from other parts of the extension.
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // Allow the popup to trigger an immediate health check.
+  // Return true to indicate you will send a response asynchronously.
+  
   if (request.action === 'checkHealth') {
     checkServerHealth();
     sendResponse({ status: 'initiated' });
-    return true; // Indicates an async response.
+    return true;
   }
-
-  // Handle the toggle action (optional, based on your extension's needs)
+  
   if (request.action === 'toggleSageAi') {
     console.log(`Sage AI activation toggled to: ${request.activated}`);
-    // Add any background logic needed when the toggle state changes.
     sendResponse({ status: 'ok' });
     return true;
+  }
+
+  // --- NEW: Handle request for untrained stats from DevTools ---
+  if (request.action === 'getUntrainedStats') {
+    (async () => {
+      try {
+        const response = await fetch(`${SERVER_URL}/admin/untrained-stats`);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        sendResponse({ success: true, data });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true; // Indicates async response.
+  }
+
+  // --- NEW: Handle request to retrain the model from DevTools ---
+  if (request.action === 'retrainModel') {
+    (async () => {
+      try {
+        const response = await fetch(`${SERVER_URL}/admin/retrain-model`, { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        sendResponse({ success: true, data });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true; // Indicates async response.
   }
 });

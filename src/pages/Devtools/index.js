@@ -1,5 +1,5 @@
 chrome.devtools.panels.create(
-  'Dev Tools from chrome-extension-boilerplate-react',
+  'SAGE DEV',
   'icon-34.png',
   'panel.html'
 );

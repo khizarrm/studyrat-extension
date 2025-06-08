@@ -1,7 +1,94 @@
 body {
-  background-color: #242424;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    padding: 15px;
+    font-size: 14px;
+    color: #333;
+    background-color: #f9f9f9;
 }
 
 .container {
-  color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+h2 {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+    margin-top: 0;
+}
+
+.stats, .actions {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.stat-item span:first-child {
+    font-weight: 500;
+}
+
+.stat-item span:last-child {
+    font-family: 'Menlo', 'Consolas', monospace;
+    background-color: #eee;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+button {
+    padding: 8px 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    margin-right: 10px;
+}
+
+button:hover {
+    background-color: #e0e0e0;
+}
+
+button:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.retrain-btn {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.retrain-btn:hover {
+    background-color: #218838;
+}
+
+#status-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    display: block; /* Always block, content will be conditional */
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
