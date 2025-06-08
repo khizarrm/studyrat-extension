@@ -26,7 +26,7 @@ async function analyzeContent() {
     }
   }
 
-  const image_count = Number(allImgs.length);
+  const image_count = getMeaningfulImageCount()
   const video_count = Number(allVideos.length);
   gif_count = Number(gif_count);
 
@@ -83,6 +83,28 @@ async function analyzeContent() {
     console.log("Analysis process finished. Resetting state flag.");
     isAnalysisRunning = false;
   }
+}
+
+
+function getMeaningfulImageCount() {
+  const allImgs = document.getElementsByTagName("img");
+  let meaningfulImageCount = 0;
+  const MIN_DIMENSION = 50; // An image must be at least 50x50 pixels to count
+
+  for (const img of allImgs) {
+    // Check 1: Is the image actually visible in the layout?
+    // (offsetParent is null for hidden elements)
+    const isVisible = !!img.offsetParent;
+
+    // Check 2: Is the image's actual size larger than our minimum?
+    // (naturalWidth is the true width of the image file)
+    const isLargeEnough = img.naturalWidth > MIN_DIMENSION && img.naturalHeight > MIN_DIMENSION;
+
+    if (isVisible && isLargeEnough) {
+      meaningfulImageCount++;
+    }
+  }
+  return meaningfulImageCount;
 }
 
 function waitForPageToSettleAndAnalyze() {
