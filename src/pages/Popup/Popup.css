@@ -225,3 +225,148 @@
         .toggle-label:active .toggle-slider {
           transform: scale(0.98);
         }
+
+        /* Server Status Card */
+.server-status-card {
+  margin: 12px 16px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.server-status-card.green {
+  background-color: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.server-status-card.red {
+  background-color: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.server-status-card.orange {
+  background-color: rgba(251, 146, 60, 0.05);
+  border-color: rgba(251, 146, 60, 0.2);
+}
+
+.server-status-card.yellow {
+  background-color: rgba(250, 204, 21, 0.05);
+  border-color: rgba(250, 204, 21, 0.2);
+}
+
+.server-status-card.gray {
+  background-color: rgba(107, 114, 128, 0.05);
+  border-color: rgba(107, 114, 128, 0.2);
+}
+
+.server-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.server-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.server-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6b7280;
+}
+
+.server-status-card.green .server-dot {
+  background-color: #22c55e;
+}
+
+.server-status-card.red .server-dot {
+  background-color: #ef4444;
+  animation: pulse 2s infinite;
+}
+
+.server-status-card.orange .server-dot {
+  background-color: #fb923c;
+}
+
+.server-status-card.yellow .server-dot {
+  background-color: #facc15;
+}
+
+.server-status-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.last-checked {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.server-status-details {
+  margin-top: 8px;
+}
+
+.status-message {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.status-components {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.component {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.component.ok {
+  color: #16a34a;
+}
+
+.component.error {
+  color: #dc2626;
+}
+
+.component-icon {
+  font-size: 12px;
+}
+
+.component-label {
+  font-weight: 500;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Disable toggle when server unhealthy */
+.toggle-input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-input:disabled + .toggle-slider .toggle-thumb {
+  cursor: not-allowed;
+}
